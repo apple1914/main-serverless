@@ -78,16 +78,20 @@ exports.depositsUpdateTransakToken = functions.pubsub
 
 
 
-exports.testEnvWorks = functions.https.onRequest(async (req, res) => {
-  const isProds = [true,false]
-  for (const isProd of isProds) {
+// exports.testEnvWorks = functions.https.onRequest(async (req, res) => {
+//   const isProds = [true,false]
+//   for (const isProd of isProds) {
 
-      const result = await transakApi.refreshAccessToken({isProd});
-      const freshAccessToken = result.accessToken;
-      functions.logger.log("freshAccessToken transak", freshAccessToken)
-      const expiration = result.expiresAt;
-      const docName = isProd ? "production" : "staging"
-      await admin.firestore().collection("transakTokens").doc(docName).set({value:freshAccessToken, expiration})
-  }    
-  res.status(200).send()
-});
+//       const result = await transakApi.refreshAccessToken({isProd});
+//       const freshAccessToken = result.accessToken;
+//       functions.logger.log("freshAccessToken transak", freshAccessToken)
+//       const expiration = result.expiresAt;
+//       const docName = isProd ? "production" : "staging"
+//       await admin.firestore().collection("transakTokens").doc(docName).set({value:freshAccessToken, expiration})
+//   }    
+//   res.status(200).send()
+// });
+// NOW remaining: 
+// 1. on Doc creates and analytics hook up
+// 
+// 
