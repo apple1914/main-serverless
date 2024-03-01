@@ -10,6 +10,7 @@
 const functions = require('firebase-functions/v1');
 const currencyServices = require("./services/currencies")
 const depositServices = require("./services/deposits")
+const onDocCreateServices = require("./services/onDocCreates")
 const transakApi = require("./api/transak")
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -31,11 +32,19 @@ exports.currenciesInitDepositCurrency = functions.https.onRequest(async (req, re
     await currencyServices.addDepositCurrency({ currency });
     res.status(200).send()
 });
+
+exports.testDelete = functions.https.onRequest(async (req, res) => {
+  const {currency} = req.body
+  await currencyServices.updateDepositPrice({currency: currency })
+  res.status(200).send()
+});
+
 exports.currenciesUpdateEarliestDepositPrice = functions.pubsub
   .schedule("every 10 minutes")
   .onRun(async (context) => {
-    const hardcodedCurrency = req.body.currency
-    await currencyServices.updateDepositPrice({currency: hardcodedCurrency || await currencyServices.fetchDepositCurrencyForUpdate()})
+    const currency = await currencyServices.fetchDepositCurrencyForUpdate()
+    functions.logger.log("chosen currency for update:", currency)
+    await currencyServices.updateDepositPrice({currency: currency })
     return null;
   });
 
@@ -64,7 +73,6 @@ exports.depositsUpdateTransakToken = functions.pubsub
   .onRun(async (context) => {
     const isProds = [true,false]
     for (const isProd of isProds) {
-
         const result = await transakApi.refreshAccessToken({isProd});
         const freshAccessToken = result.accessToken;
         functions.logger.log("freshAccessToken transak", freshAccessToken)
@@ -72,26 +80,36 @@ exports.depositsUpdateTransakToken = functions.pubsub
         const docName = isProd ? "production" : "staging"
         await admin.firestore().collection("transakTokens").doc(docName).set({value:freshAccessToken, expiration:new Date(expiration*1000)})
     }
-
     return null;
   });
 
+exports.onUserCreate = functions.firestore
+  .document("/users/{docId}")
+  .onCreate((snap, context) => {
+    const userData = snap.data();
+    const id = context.params.docId
+    return onDocCreateServices.onUserCreate({...userData,id:id})
+  });
 
+  exports.onWithdrawalAddressCreate = functions.firestore
+    .document("/withdrawalAddresses/{docId}")
+    .onCreate((snap, context) => {
+    const id = context.params.docId
+    const docData = snap.data()
+    return onDocCreateServices.onWithdrawalAddressCreate({...docData,id:id})
+  });
+  exports.onDepositCreate = functions.firestore
+    .document("/deposits/{docId}")
+    .onCreate((snap, context) => {
+    const id = context.params.docId
+    const docData = snap.data()
+    return onDocCreateServices.onDepositCreate({...docData,id:id})
+  });
 
-// exports.testEnvWorks = functions.https.onRequest(async (req, res) => {
-//   const isProds = [true,false]
-//   for (const isProd of isProds) {
-
-//       const result = await transakApi.refreshAccessToken({isProd});
-//       const freshAccessToken = result.accessToken;
-//       functions.logger.log("freshAccessToken transak", freshAccessToken)
-//       const expiration = result.expiresAt;
-//       const docName = isProd ? "production" : "staging"
-//       await admin.firestore().collection("transakTokens").doc(docName).set({value:freshAccessToken, expiration})
-//   }    
-//   res.status(200).send()
-// });
-// NOW remaining: 
-// 1. on Doc creates and analytics hook up
-// 
-// 
+  exports.onOnrampLogCreate = functions.firestore
+    .document("/onrampLogs/{docId}")
+    .onCreate((snap, context) => {
+    const id = context.params.docId
+    const docData = snap.data()
+    return onDocCreateServices.onOnrampLogCreate({...docData,id:id})
+  });

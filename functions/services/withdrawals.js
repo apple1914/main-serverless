@@ -3,7 +3,6 @@ const functions = require('firebase-functions/v1');
 const admin = require("firebase-admin");
 const cryptoServices = require("./crypto");
 const {convertUsdtToCryptoccurency} = require("../utils/conversions");
-
 const createWithdrawal = async (input) => {
   const {
     username,
@@ -17,8 +16,8 @@ const createWithdrawal = async (input) => {
   if (!usdtAmount) {
     throw new Error("this shouldn't happen");
   }
-  const myWithdrawalAddressDoc = await admin.firestore().collection("withdrawalAddress").doc(withdrawalAddressId).get()
-  const {blockchain,cryptocurrency,toAddress} = myWithdrawalAddressDoc.data()
+  const myWithdrawalAddressDoc = await admin.firestore().collection("withdrawalAddresses").doc(withdrawalAddressId).get()
+  const {blockchain,cryptocurrency,address} = myWithdrawalAddressDoc.data()
 
   const cryptoValue = await convertUsdtToCryptoccurency({
     usdtAmount: usdtAmount,
@@ -36,11 +35,12 @@ const createWithdrawal = async (input) => {
   //withdrawalDocRef.id if need id
   
   const blockchainTransactionId = await cryptoServices.triggerCoinWithdrawal({
-    toAddress: toAddress,
+    toAddress: address,
     cryptocurrency: cryptocurrency,
     blockchain: blockchain,
     cryptoValue,
   });
+  await admin.firestore().collection("withdrawals").doc(withdrawalDocRef.id).update({blockchainTransactionId})
   functions.logger.log("withdrawal procesed",{withdrawalId:withdrawalDocRef.id,blockchainTransactionId})
   return { status: 200 };
 };
