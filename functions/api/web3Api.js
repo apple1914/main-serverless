@@ -1,4 +1,6 @@
 const { Web3 } = require("web3");
+const functions = require('firebase-functions/v1');
+
 const RPC_SETTINGS = {
   bsc: { RPC_URL: "https://bsc-dataseed1.binance.org:443" },
 };

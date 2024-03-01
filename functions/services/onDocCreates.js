@@ -1,6 +1,7 @@
 const analyticServices = require("./analytics")
 const depositServices = require("./deposits")
-
+const functions = require('firebase-functions/v1');
+const admin = require("firebase-admin")
 const onUserCreate = async (doc) => {
     functions.logger.log("triggered: onUserCreate")
     await analyticServices.reportEvent({username:doc.id,eventName:"signup",insertId:doc.id,userProps:{utm_campaign:doc.utm_campaign}})
@@ -26,5 +27,10 @@ const onOnrampLogCreate = async (doc) => {
     await analyticServices.reportEvent({username:username,eventName:eventName,insertId:doc.id})
 }
 
+const onUserEventCreate = async (doc) => {
+    functions.logger.log("triggered: onUserEventCreate")
+    await analyticServices.reportEvent({username:doc.username,eventName:doc.eventName,insertId:doc.id})
+}
 
-module.exports = {onOnrampLogCreate,onUserCreate,onWithdrawalAddressCreate,onDepositCreate}
+
+module.exports = {onOnrampLogCreate,onUserCreate,onWithdrawalAddressCreate,onDepositCreate,onUserEventCreate}

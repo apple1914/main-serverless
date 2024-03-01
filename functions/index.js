@@ -113,3 +113,12 @@ exports.onUserCreate = functions.firestore
     const docData = snap.data()
     return onDocCreateServices.onOnrampLogCreate({...docData,id:id})
   });
+
+
+  exports.onUserEventCreate = functions.firestore
+  .document("/userEvents/{docId}")
+  .onCreate((snap, context) => {
+  const id = context.params.docId
+  const docData = snap.data()
+  return onDocCreateServices.onUserEventCreate({...docData,id:id})
+});
