@@ -1,4 +1,6 @@
 const axios = require("axios")
+const functions = require('firebase-functions/v1');
+
 const FREECURRENCYAPI_API_KEY = process.env.FREECURRENCYAPI_API_KEY
 
 const fetchLatestRates = async () => {

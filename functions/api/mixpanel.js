@@ -1,4 +1,5 @@
 const axios = require("axios")
+const functions = require('firebase-functions/v1');
 const MIXPANEL_SECRET = process.env.MIXPANEL_SECRET
 const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN
 
