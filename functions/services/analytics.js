@@ -1,6 +1,9 @@
 const mixpanelApi = require("../api/mixpanel")
 const { v4: uuidv4 } = require("uuid");
 
+const functions = require('firebase-functions/v1');
+const admin = require("firebase-admin")
+
 const reportEvent = async ({username,eventName,insertId,userProps}) => {
     functions.logger.log("triggered reportEvent")
     

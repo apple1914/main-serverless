@@ -1,4 +1,5 @@
 const axios = require("axios");
+const functions = require('firebase-functions/v1');
 
 const fetchPrice = async ({ cryptocurrency }) => {
   const headers = { "X-CMC_PRO_API_KEY": process.env.COINMARKETCAP_API_KEY };

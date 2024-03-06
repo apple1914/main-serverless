@@ -27,9 +27,12 @@ const processMercuryoWebhook = async (payload) => {
 };
 
 const processTransakWebhook = async ({payload,isProd}) => {
-  const tempAccessTokenObj = await TempAccessTokens.findOne({
-    name: "transak",isProd
-  });
+  const environment = isProd === false ? "staging" : "production"
+  functions.logger.log("environment", {environment})
+
+  const tempAccessTokenDoc = await admin.firestore().collection("transakTokens").doc(environment).get()
+  functions.logger.log("tempAccessTokenDoc", tempAccessTokenDoc)
+  const tempAccessTokenObj = tempAccessTokenDoc.data()
   const acessToken = tempAccessTokenObj.value;
   functions.logger.log("found acessToken", acessToken)
 

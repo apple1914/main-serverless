@@ -1,3 +1,5 @@
+const functions = require('firebase-functions/v1');
+
 const coinmarketcapApis = require("../api/coinmarketcap");
 
 const parseWebhookCryptoValue = async ({ cryptoValue, cryptocurrency }) => {
