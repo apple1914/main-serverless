@@ -1,23 +1,23 @@
-
-const functions = require('firebase-functions/v1');
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const cryptoServices = require("./crypto");
-const {convertUsdtToCryptoccurency} = require("../utils/conversions");
+const virtualBalanceServices = require("./virtualBalances");
+const { convertUsdtToCryptoccurency } = require("../utils/conversions");
 const createWithdrawal = async (input) => {
-  const {
-    username,
-    withdrawalAddressId, //value to indicate that it can be small or big
-    usdtAmount,
-  } = input;
-  
-  if (!withdrawalAddressId) {
-    throw new Error("this shouldn't happen");
+  const { username, withdrawalAddressId, usdtAmount, ignoreBalance } = input;
+
+  if (ignoreBalance === false) {
+    const balance = await virtualBalanceServices.getBalance({ username });
+    if (balance < usdtAmount) {
+      return { success: false };
+    }
   }
-  if (!usdtAmount) {
-    throw new Error("this shouldn't happen");
-  }
-  const myWithdrawalAddressDoc = await admin.firestore().collection("withdrawalAddresses").doc(withdrawalAddressId).get()
-  const {blockchain,cryptocurrency,address} = myWithdrawalAddressDoc.data()
+  const myWithdrawalAddressDoc = await admin
+    .firestore()
+    .collection("withdrawalAddresses")
+    .doc(withdrawalAddressId)
+    .get();
+  const { blockchain, cryptocurrency, address } = myWithdrawalAddressDoc.data();
 
   const cryptoValue = await convertUsdtToCryptoccurency({
     usdtAmount: usdtAmount,
@@ -29,22 +29,32 @@ const createWithdrawal = async (input) => {
     withdrawalAddressId: withdrawalAddressId,
     usdtAmount: usdtAmount, //how much should be debited from the virtual baalnce
     cryptoValue: cryptoValue, //instruction for how much crypto to be sent out
-    cryptocurrency:cryptocurrency
+    cryptocurrency: cryptocurrency,
   };
-  const withdrawalDocRef = await admin.firestore().collection("withdrawals").add(definition)
+  const withdrawalDocRef = await admin
+    .firestore()
+    .collection("withdrawals")
+    .add(definition);
   //withdrawalDocRef.id if need id
-  
+
   const blockchainTransactionId = await cryptoServices.triggerCoinWithdrawal({
     toAddress: address,
     cryptocurrency: cryptocurrency,
     blockchain: blockchain,
     cryptoValue,
   });
-  await admin.firestore().collection("withdrawals").doc(withdrawalDocRef.id).update({blockchainTransactionId})
-  functions.logger.log("withdrawal procesed",{withdrawalId:withdrawalDocRef.id,blockchainTransactionId})
-  return { status: 200 };
-};
+  await admin
+    .firestore()
+    .collection("withdrawals")
+    .doc(withdrawalDocRef.id)
+    .update({ blockchainTransactionId });
 
+  if (ignoreBalance === false) {
+    await virtualBalanceServices.subtractFromBalance({ username, usdtAmount });
+  }
+
+  return { success: true };
+};
 
 module.exports = {
   createWithdrawal,
