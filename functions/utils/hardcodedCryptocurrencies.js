@@ -1,0 +1,2 @@
+const MERCURYO_BUY_CURRENCY = "USDT";
+module.exports = { MERCURYO_BUY_CURRENCY };

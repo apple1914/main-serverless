@@ -49,7 +49,8 @@ exports.currenciesUpdateEarliestDepositPrice = functions.pubsub
 
 exports.depositsMercuryoDepositSuccessWebhook = functions.https.onRequest(
   async (req, res) => {
-    const payload = req.body;
+    const payload = req.body.data;
+    functions.logger.log("SHABOINK!", payload);
     await depositServices.processMercuryoWebhook(payload);
     res.status(200).send();
   }

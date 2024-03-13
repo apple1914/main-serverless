@@ -1,13 +1,14 @@
-
-const functions = require('firebase-functions/v1');
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const transakApi = require("../api/transak")
-const forexApi = require("../api/forex")
-const FIAT_LEVELS = [
-    1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 75,
-    100, 200,
-  ];
+const transakApi = require("../api/transak");
+const mercuryoApi = require("../api/mercuryo");
+const forexApi = require("../api/forex");
+const {
+  MERCURYO_BUY_CURRENCY,
+} = require("../utils/hardcodedCryptocurrencies.js");
 
+const FIAT_LEVELS = [1.05, 1.25, 1.5, 3.0];
+//fetchDepositMinimum
 //
 //
 //------DEPOSIT RELATED IS BELOW THIS ------
@@ -15,58 +16,78 @@ const FIAT_LEVELS = [
 //
 
 const addDepositCurrency = async ({ currency }) => {
-    const transakFiatCurrencies = await transakApi.fetchFiatCurrencies()
-    
-    const myTransakFiatCurrency = transakFiatCurrencies.find((currencyInfo) => currencyInfo.symbol === currency)
-    if (!myTransakFiatCurrency) {
-        return {status:404}
-    }
-    const allPaymentOptions = myTransakFiatCurrency.paymentOptions
-    const myPaymentOptionInfo = allPaymentOptions.find((paymentOption)=>paymentOption.id === "credit_debit_card")
-    if (!myPaymentOptionInfo) {
-        return {status:400}
-    }
-    const minAmount = myPaymentOptionInfo.minAmount
-    const definition = { currency,lastUpdateAttempt:Date.now(),fiatAmountMinimum:minAmount,createdAt:new Date() };
-    await admin.firestore().collection("depositPrices").doc(currency).set(definition)
-    return {status:200}
+  const mercuryoResult = await mercuryoApi.fetchDepositMinimum({
+    currency,
+    cryptocurrency: MERCURYO_BUY_CURRENCY,
+  });
+  const fiatAmountMinimumFromMerc = mercuryoResult[currency]["min"];
+  const fiatAmountMinimum = Number(fiatAmountMinimumFromMerc);
+  const definition = {
+    currency,
+    lastUpdateAttempt: Date.now(),
+    fiatAmountMinimum: fiatAmountMinimum,
+    createdAt: new Date(),
   };
+  await admin
+    .firestore()
+    .collection("depositPrices")
+    .doc(currency)
+    .set(definition);
+  return { status: 200 };
+};
 
-const updateDepositPrice = async ({currency}) => {
-    await admin.firestore().collection("depositPrices").doc(currency).update({lastUpdateAttempt: new Date()})
-    const depositDoc = await admin.firestore().collection("depositPrices").doc(currency).get()
-    const { fiatAmountMinimum } = depositDoc.data()
-    const levels = FIAT_LEVELS;//lastUpdateAttempt
-    const prices = {};
-    for (const multiplier of levels) {
-        const fiatAmount = multiplier * fiatAmountMinimum;
-        const cryptoAmount = await transakApi.apiFetchDepositPrice({
-            currency,
-            fiatAmount,
-        });
-        const price = fiatAmount / cryptoAmount;
-        const levelName = multiplier.toFixed(0).toString();
-        prices[levelName] = price;
-    }
-    
-    const update = { prices: prices };
-    await admin.firestore().collection("depositPrices").doc(currency).update(update)
+const updateDepositPrice = async ({ currency }) => {
+  await admin
+    .firestore()
+    .collection("depositPrices")
+    .doc(currency)
+    .update({ lastUpdateAttempt: new Date() });
+  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimum({
+    currency: currency,
+    cryptocurrency: MERCURYO_BUY_CURRENCY,
+  });
+  const fiatAmountMinimumFromMerc = mercuryoResultMin[currency]["min"];
+  const fiatAmountMinimum =
+    currency === "EUR" ? 25.0 : Number(fiatAmountMinimumFromMerc);
 
-}
+  const levels = FIAT_LEVELS; //lastUpdateAttempt
+  const prices = {};
+  for (const multiplier of levels) {
+    const fiatAmount = multiplier * fiatAmountMinimum;
+    const result = await mercuryoApi.apiFetchDepositPrice({
+      currency,
+      fiatAmount,
+      cryptocurrency: MERCURYO_BUY_CURRENCY,
+    });
+    const cryptoAmount = Number(result.amount);
+    const price = fiatAmount / cryptoAmount;
+    const levelName = multiplier.toFixed(2);
+    prices[levelName] = price;
+  }
+
+  const update = { prices: prices, fiatAmountMinimum: fiatAmountMinimum };
+  await admin
+    .firestore()
+    .collection("depositPrices")
+    .doc(currency)
+    .update(update);
+};
 
 const fetchDepositCurrencyForUpdate = async () => {
-    const depositCurrenciesRef = admin.firestore().collection("depositPrices")
-    const snapshot = await depositCurrenciesRef.orderBy("lastUpdateAttempt").limit(1).get()
-    // query(depositCurrenciesRef, orderBy("lastUpdateAttempt"), limit(1));
-    const currs = []
-    snapshot.forEach((doc)=> {
-        const currency = doc.id
-        currs.push(currency)
-    })
-    const oldestCur = currs[0]
-    return oldestCur
-}
-
+  const depositCurrenciesRef = admin.firestore().collection("depositPrices");
+  const snapshot = await depositCurrenciesRef
+    .orderBy("lastUpdateAttempt")
+    .limit(1)
+    .get();
+  // query(depositCurrenciesRef, orderBy("lastUpdateAttempt"), limit(1));
+  const currs = [];
+  snapshot.forEach((doc) => {
+    const currency = doc.id;
+    currs.push(currency);
+  });
+  const oldestCur = currs[0];
+  return oldestCur;
+};
 
 //
 //
@@ -74,32 +95,40 @@ const fetchDepositCurrencyForUpdate = async () => {
 //
 //
 
-
-
-
 const initBatchWithdrawCurrencies = async () => {
-    const latestRatesMap = await forexApi.fetchLatestRates()
-    for (const [currency, value] of Object.entries(latestRatesMap)) {
-        const definition = {currency,value,createdAt:new Date()}
-        await admin.firestore().collection("withdrawValues").doc(currency).set(definition)
-    }
-    return
+  const latestRatesMap = await forexApi.fetchLatestRates();
+  for (const [currency, value] of Object.entries(latestRatesMap)) {
+    const definition = { currency, value, createdAt: new Date() };
+    await admin
+      .firestore()
+      .collection("withdrawValues")
+      .doc(currency)
+      .set(definition);
+  }
+  return;
 };
 
 const updateAllWithdrawValues = async () => {
-    const latestRatesMap = await forexApi.fetchLatestRates()
-    for (const [currency, value] of Object.entries(latestRatesMap)) {
-        try {
-            await admin.firestore().collection("withdrawValues").doc(currency).update({value})
-
-        } catch (e) {
-            functions.logger.log(e)
-            throw new Error("error with updateAllWithdrawValues")
-        }
+  const latestRatesMap = await forexApi.fetchLatestRates();
+  for (const [currency, value] of Object.entries(latestRatesMap)) {
+    try {
+      await admin
+        .firestore()
+        .collection("withdrawValues")
+        .doc(currency)
+        .update({ value });
+    } catch (e) {
+      functions.logger.log(e);
+      throw new Error("error with updateAllWithdrawValues");
     }
-    return
-}
+  }
+  return;
+};
 
-
-
-module.exports = {addDepositCurrency,updateDepositPrice,updateAllWithdrawValues,fetchDepositCurrencyForUpdate,initBatchWithdrawCurrencies}
+module.exports = {
+  addDepositCurrency,
+  updateDepositPrice,
+  updateAllWithdrawValues,
+  fetchDepositCurrencyForUpdate,
+  initBatchWithdrawCurrencies,
+};

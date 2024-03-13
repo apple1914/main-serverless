@@ -8,17 +8,20 @@ const jwt = require("jsonwebtoken");
 const logServices = require("../services/logs");
 
 const processMercuryoWebhook = async (payload) => {
-  const { merchantTransactionId, amount, currency, type, status } = payload;
+  const { merchant_transaction_id, amount, currency, type, status } =
+    payload.data;
   //save the logs here
-  if (type != "withdrawal" || status != "completed") {
-    return;
-  }
-  const depositId = merchantTransactionId.slice(0, -2);
+  const depositId = merchant_transaction_id.slice(0, -2);
   logServices.saveOnrampLog({
     data: payload,
     depositId,
     eventName: [type, status].join("-"),
+    createdAt: new Date(),
   });
+  if (type != "withdraw" || status != "completed") {
+    return;
+  }
+
   await handleOnrampsWebhookData({
     depositId: depositId,
     cryptocurrency: currency.toUpperCase(),
@@ -74,6 +77,7 @@ const processTransakWebhook = async ({ payload, isProd }) => {
     data: webhookData,
     depositId: partnerOrderId,
     eventName: eventID,
+    createdAt: new Date(),
   });
 
   if (status == "COMPLETED" && eventID == "ORDER_COMPLETED") {
