@@ -12,7 +12,7 @@ const apiFetchDepositPrice = async ({
     cryptocurrency
   );
   const widgetId = MERCURYO_WIDGET_ID_TEST;
-  const baseUrl = "https://api.mercuryo.io";
+  const baseUrl = "https://sandbox-api.mrcr.io"; //"https://api.mercuryo.io";
 
   const payload = {
     from: currency,

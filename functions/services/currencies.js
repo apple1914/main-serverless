@@ -7,7 +7,7 @@ const {
   MERCURYO_BUY_CURRENCY,
 } = require("../utils/hardcodedCryptocurrencies.js");
 
-const FIAT_LEVELS = [1, 1.25, 1.5, 2.5];
+const FIAT_LEVELS = [1.05, 1.25, 1.5, 3.0];
 //fetchDepositMinimum
 //
 //
@@ -42,12 +42,14 @@ const updateDepositPrice = async ({ currency }) => {
     .collection("depositPrices")
     .doc(currency)
     .update({ lastUpdateAttempt: new Date() });
-  const depositDoc = await admin
-    .firestore()
-    .collection("depositPrices")
-    .doc(currency)
-    .get();
-  const { fiatAmountMinimum } = depositDoc.data();
+  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimum({
+    currency: currency,
+    cryptocurrency: MERCURYO_BUY_CURRENCY,
+  });
+  const fiatAmountMinimumFromMerc = mercuryoResultMin[currency]["min"];
+  const fiatAmountMinimum =
+    currency === "EUR" ? 25.0 : Number(fiatAmountMinimumFromMerc);
+
   const levels = FIAT_LEVELS; //lastUpdateAttempt
   const prices = {};
   for (const multiplier of levels) {
@@ -59,11 +61,11 @@ const updateDepositPrice = async ({ currency }) => {
     });
     const cryptoAmount = Number(result.amount);
     const price = fiatAmount / cryptoAmount;
-    const levelName = multiplier.toFixed(0).toString();
+    const levelName = multiplier.toFixed(2);
     prices[levelName] = price;
   }
 
-  const update = { prices: prices };
+  const update = { prices: prices, fiatAmountMinimum: fiatAmountMinimum };
   await admin
     .firestore()
     .collection("depositPrices")
