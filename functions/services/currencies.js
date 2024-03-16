@@ -5,6 +5,7 @@ const mercuryoApi = require("../api/mercuryo");
 const forexApi = require("../api/forex");
 const {
   MERCURYO_BUY_CURRENCY,
+  MERCURYO_BUY_NETWORK,
 } = require("../utils/hardcodedCryptocurrencies.js");
 
 const FIAT_LEVELS = [1.05, 1.25, 1.5, 3.0];
@@ -42,15 +43,8 @@ const updateDepositPrice = async ({ currency }) => {
     .collection("depositPrices")
     .doc(currency)
     .update({ lastUpdateAttempt: new Date() });
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
-  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimumFake({
+
+  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimum({
     currency: currency,
     cryptocurrency: MERCURYO_BUY_CURRENCY,
   });
@@ -61,11 +55,12 @@ const updateDepositPrice = async ({ currency }) => {
   const levels = FIAT_LEVELS; //lastUpdateAttempt
   const prices = {};
   for (const multiplier of levels) {
-    const fiatAmount = multiplier * fiatAmountMinimum;
+    const fiatAmount = Number(multiplier) * Number(fiatAmountMinimum);
     const result = await mercuryoApi.apiFetchDepositPrice({
       currency,
-      fiatAmount,
+      fiatAmount: Number(fiatAmount.toFixed(2)),
       cryptocurrency: MERCURYO_BUY_CURRENCY,
+      network: MERCURYO_BUY_NETWORK,
     });
     const cryptoAmount = Number(result.amount);
     const price = fiatAmount / cryptoAmount;
