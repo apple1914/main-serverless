@@ -1,4 +1,5 @@
 const axios = require("axios");
+const querystring = require("node:querystring");
 const { MERCURYO_WIDGET_ID_TEST } = require("../utils/transakKeyConfig");
 const functions = require("firebase-functions");
 const apiFetchDepositPrice = async ({
@@ -72,4 +73,37 @@ const fetchDepositMinimum = async ({ currency, cryptocurrency }) => {
     });
 };
 
-module.exports = { apiFetchDepositPrice, fetchDepositMinimum };
+const fetchDepositMinimumFake = async ({ currency, cryptocurrency }) => {
+  const mins = {
+    USD: 28,
+    GBP: 22,
+    EUR: 25,
+    ARS: 24000,
+    AUD: 42,
+    BRL: 140,
+    CAD: 37,
+    CHF: 24,
+    COP: 110000,
+    CZK: 640,
+    HKD: 220,
+    ILS: 100,
+    JPY: 4000,
+    PLN: 110,
+    RON: 125,
+    SEK: 285,
+    TRY: 880,
+    VND: 700000,
+  };
+  const answer = mins[currency];
+  const finalResult = {};
+  finalResult[currency] = {
+    min: answer,
+  };
+  return finalResult;
+};
+
+module.exports = {
+  apiFetchDepositPrice,
+  fetchDepositMinimum,
+  fetchDepositMinimumFake,
+};

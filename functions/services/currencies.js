@@ -42,7 +42,15 @@ const updateDepositPrice = async ({ currency }) => {
     .collection("depositPrices")
     .doc(currency)
     .update({ lastUpdateAttempt: new Date() });
-  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimum({
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  //WARNING!! REPLACE THIS ONCE PROD KEYS AVAILABLA±!!
+  const mercuryoResultMin = await mercuryoApi.fetchDepositMinimumFake({
     currency: currency,
     cryptocurrency: MERCURYO_BUY_CURRENCY,
   });
