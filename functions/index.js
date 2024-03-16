@@ -39,7 +39,7 @@ exports.currenciesInitDepositCurrency = functions.https.onRequest(
 );
 
 exports.currenciesUpdateEarliestDepositPrice = functions.pubsub
-  .schedule("every 10 minutes")
+  .schedule("every 2 minutes")
   .onRun(async (context) => {
     const currency = await currencyServices.fetchDepositCurrencyForUpdate();
     functions.logger.log("chosen currency for update:", currency);
