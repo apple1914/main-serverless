@@ -8,8 +8,7 @@ const jwt = require("jsonwebtoken");
 const logServices = require("../services/logs");
 
 const processMercuryoWebhook = async (payload) => {
-  const { merchant_transaction_id, amount, currency, type, status } =
-    payload.data;
+  const { merchant_transaction_id, amount, currency, type, status } = payload;
   //save the logs here
   const depositId = merchant_transaction_id.slice(0, -2);
   logServices.saveOnrampLog({
