@@ -17,7 +17,9 @@ const createWithdrawal = async (input) => {
     .collection("withdrawalAddresses")
     .doc(withdrawalAddressId)
     .get();
-  const { blockchain, cryptocurrency, address } = myWithdrawalAddressDoc.data();
+  const { blockchain, cryptocurrency, address, nickname } =
+    myWithdrawalAddressDoc.data();
+  const withdrawalAddress = { address, nickname, blockchain, cryptocurrency };
 
   const cryptoValue = await convertUsdtToCryptoccurency({
     usdtAmount: usdtAmount,
@@ -30,13 +32,18 @@ const createWithdrawal = async (input) => {
     usdtAmount: usdtAmount, //how much should be debited from the virtual baalnce
     cryptoValue: cryptoValue, //instruction for how much crypto to be sent out
     cryptocurrency: cryptocurrency,
+    createdAt: new Date(),
+    completed: false,
+    withdrawalAddress: withdrawalAddress,
   };
   const withdrawalDocRef = await admin
     .firestore()
     .collection("withdrawals")
     .add(definition);
   //withdrawalDocRef.id if need id
-
+  if (address.includes("faux")) {
+    return { success: true };
+  }
   const blockchainTransactionId = await cryptoServices.triggerCoinWithdrawal({
     toAddress: address,
     cryptocurrency: cryptocurrency,

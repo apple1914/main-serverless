@@ -15,7 +15,6 @@ const processMercuryoWebhook = async (payload) => {
     data: payload,
     depositId,
     eventName: [type, status].join("-"),
-    createdAt: new Date(),
   });
   if (type != "withdraw" || status != "completed") {
     return;

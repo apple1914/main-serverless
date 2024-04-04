@@ -11,9 +11,13 @@ const functions = require("firebase-functions/v1");
 const currencyServices = require("./services/currencies");
 const depositServices = require("./services/deposits");
 const withdrawalServices = require("./services/withdrawals");
-
+const userServices = require("./services/users");
+const virtualBalanceServices = require("./services/virtualBalances");
 const onDocCreateServices = require("./services/onDocCreates");
+const adminDashboardServices = require("./services/adminDashboard");
+
 const transakApi = require("./api/transak");
+const tronApi = require("./api/tron");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
@@ -68,6 +72,18 @@ exports.depositsTransakDepositSuccessWebhookStaging = functions.https.onRequest(
     const payload = req.body.data;
     const isProd = false;
     await depositServices.processTransakWebhook({ payload, isProd: isProd });
+    res.status(200).send();
+  }
+);
+
+exports.virtualBalancesAdd5BonusByEmail = functions.https.onRequest(
+  async (req, res) => {
+    const email = req.query.email;
+    const username = await userServices.lookupUsernameByEmail({ email });
+    await virtualBalanceServices.addToBalance({
+      username: username,
+      usdtAmount: 5.0,
+    });
     res.status(200).send();
   }
 );
@@ -155,3 +171,72 @@ exports.createWithdrawal = functions.https.onCall(async (data, context) => {
     success,
   };
 });
+
+exports.testDeleteMe = functions.https.onRequest(async (req, res) => {
+  const { toAddress, cryptoValue } = req.body;
+  const blockchain = "tron";
+  const result = await transakApi.tronApi({
+    toAddress,
+    cryptoValue,
+    blockchain,
+  });
+  res.status(200).send(result);
+});
+
+exports.fetchUsernameByEmail = functions.https.onRequest(async (req, res) => {
+  const { email } = req.body;
+  const username = await userServices.lookupUsernameByEmail({ email });
+  if (!username) {
+    return res.status(404).send();
+  }
+
+  res.status(200).send(username);
+});
+
+exports.fetchDepositsByUsername = functions.https.onRequest(
+  async (req, res) => {
+    const { username } = req.body;
+
+    const results = await adminDashboardServices.fetchDepositsByUsername({
+      username,
+    });
+    res.status(200).send(results);
+  }
+);
+
+exports.fetchOnrampLogsByDepositId = functions.https.onRequest(
+  async (req, res) => {
+    const { depositId } = req.body;
+    const results = await adminDashboardServices.fetchOnrampLogsByDepositId({
+      depositId,
+    });
+    res.status(200).send(results);
+  }
+);
+
+exports.fetchWithdrawalAddressByWithdrawalAddressId = functions.https.onRequest(
+  async (req, res) => {
+    const { withdrawalAddressId } = req.body;
+    const result =
+      await adminDashboardServices.fetchWithdrawalAddressByWithdrawalAddressId({
+        withdrawalAddressId,
+      });
+    res.status(200).send(result);
+  }
+);
+
+exports.fetchLast50Withdrawals = functions.https.onRequest(async (req, res) => {
+  const results = await adminDashboardServices.fetchLast50Withdrawals();
+  res.status(200).send(results);
+}); //used
+
+exports.markWithdrawalCompleted = functions.https.onRequest(
+  async (req, res) => {
+    const { withdrawalId } = req.body;
+
+    await adminDashboardServices.markWithdrawalCompleted({
+      withdrawalId,
+    });
+    res.status(200).send();
+  }
+); //used
