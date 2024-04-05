@@ -92,10 +92,54 @@ const markWithdrawalCompleted = async ({ withdrawalId }) => {
   return;
 };
 
+const setCustomerSupportCurrentAgent = async ({ name }) => {
+  const snapshotOldOnDuty = await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .where("isOnDuty", "==", true)
+    .get();
+  await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .doc(snapshotOldOnDuty.docs[0].id)
+    .update({ isOnDuty: false });
+
+  const snapshotNewOnDuty = await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .where("name", "==", name)
+    .get();
+  await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .doc(snapshotNewOnDuty.docs[0].id)
+    .update({ isOnDuty: true });
+
+  return;
+};
+
+const fetchCustomerSupportCurrentAgent = async () => {
+  const snapshotOnDuty = await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .where("isOnDuty", "==", true)
+    .get();
+
+  const myAgentDoc = await admin
+    .firestore()
+    .collection("customerSupportAgents")
+    .doc(snapshotOnDuty.docs[0].id)
+    .get();
+  const { name } = myAgentDoc.data();
+  return name;
+};
+
 module.exports = {
   fetchDepositsByUsername,
   fetchOnrampLogsByDepositId,
   fetchWithdrawalAddressByWithdrawalAddressId,
   fetchLast50Withdrawals,
   markWithdrawalCompleted,
+  fetchCustomerSupportCurrentAgent,
+  setCustomerSupportCurrentAgent,
 };

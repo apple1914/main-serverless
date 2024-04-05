@@ -6,6 +6,7 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
+const cors = require("cors")({ origin: true });
 
 const functions = require("firebase-functions/v1");
 const currencyServices = require("./services/currencies");
@@ -183,60 +184,87 @@ exports.testDeleteMe = functions.https.onRequest(async (req, res) => {
   res.status(200).send(result);
 });
 
-exports.fetchUsernameByEmail = functions.https.onRequest(async (req, res) => {
-  const { email } = req.body;
-  const username = await userServices.lookupUsernameByEmail({ email });
-  if (!username) {
-    return res.status(404).send();
-  }
+exports.fetchUsernameByEmail = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const { email } = req.body;
+    const username = await userServices.lookupUsernameByEmail({ email });
+    if (!username) {
+      return res.status(404).send();
+    }
 
-  res.status(200).send(username);
+    res.status(200).send(username);
+  });
 });
 
-exports.fetchDepositsByUsername = functions.https.onRequest(
-  async (req, res) => {
+exports.fetchDepositsByUsername = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
     const { username } = req.body;
-
     const results = await adminDashboardServices.fetchDepositsByUsername({
       username,
     });
     res.status(200).send(results);
-  }
-);
+  });
+});
 
-exports.fetchOnrampLogsByDepositId = functions.https.onRequest(
-  async (req, res) => {
+exports.fetchOnrampLogsByDepositId = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
     const { depositId } = req.body;
     const results = await adminDashboardServices.fetchOnrampLogsByDepositId({
       depositId,
     });
     res.status(200).send(results);
-  }
-);
+  });
+});
 
 exports.fetchWithdrawalAddressByWithdrawalAddressId = functions.https.onRequest(
-  async (req, res) => {
-    const { withdrawalAddressId } = req.body;
-    const result =
-      await adminDashboardServices.fetchWithdrawalAddressByWithdrawalAddressId({
-        withdrawalAddressId,
-      });
-    res.status(200).send(result);
+  (req, res) => {
+    cors(req, res, async () => {
+      const { withdrawalAddressId } = req.body;
+      const result =
+        await adminDashboardServices.fetchWithdrawalAddressByWithdrawalAddressId(
+          {
+            withdrawalAddressId,
+          }
+        );
+      res.status(200).send(result);
+    });
   }
 );
 
-exports.fetchLast50Withdrawals = functions.https.onRequest(async (req, res) => {
-  const results = await adminDashboardServices.fetchLast50Withdrawals();
-  res.status(200).send(results);
-}); //used
+exports.fetchLast50Withdrawals = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const results = await adminDashboardServices.fetchLast50Withdrawals();
+    res.status(200).send(results);
+  });
+});
 
-exports.markWithdrawalCompleted = functions.https.onRequest(
-  async (req, res) => {
+exports.markWithdrawalCompleted = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
     const { withdrawalId } = req.body;
 
     await adminDashboardServices.markWithdrawalCompleted({
       withdrawalId,
     });
     res.status(200).send();
+  });
+});
+
+exports.fetchCustomerSupportCurrentAgent = functions.https.onRequest(
+  (req, res) => {
+    cors(req, res, async () => {
+      const result =
+        await adminDashboardServices.fetchCustomerSupportCurrentAgent();
+      res.status(200).send(result);
+    });
   }
 ); //used
+
+exports.setCustomerSupportCurrentAgent = functions.https.onRequest(
+  (req, res) => {
+    cors(req, res, async () => {
+      const { name } = req.body;
+      await adminDashboardServices.setCustomerSupportCurrentAgent({ name });
+      res.status(200).send();
+    });
+  }
+);
