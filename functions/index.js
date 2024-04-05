@@ -268,3 +268,18 @@ exports.setCustomerSupportCurrentAgent = functions.https.onRequest(
     });
   }
 );
+
+exports.testDeleteMe = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const { username, usdtAmount, withdrawalAddressId } = req.body;
+    const { success, result } = await withdrawalServices.createWithdrawal({
+      username,
+      usdtAmount,
+      withdrawalAddressId,
+      ignoreBalance: true,
+    });
+    res.status(200).send(result);
+  });
+});
+
+//fetchWithdrawalTrackingInfo

@@ -3,6 +3,8 @@ const admin = require("firebase-admin");
 const cryptoServices = require("./crypto");
 const virtualBalanceServices = require("./virtualBalances");
 const { convertUsdtToCryptoccurency } = require("../utils/conversions");
+const SUSPEND_WITHDRAWALS = true;
+
 const createWithdrawal = async (input) => {
   const { username, withdrawalAddressId, usdtAmount, ignoreBalance } = input;
 
@@ -35,14 +37,15 @@ const createWithdrawal = async (input) => {
     createdAt: new Date(),
     completed: false,
     withdrawalAddress: withdrawalAddress,
+    tusti: false,
   };
   const withdrawalDocRef = await admin
     .firestore()
     .collection("withdrawals")
     .add(definition);
   //withdrawalDocRef.id if need id
-  if (address.includes("faux")) {
-    return { success: true };
+  if (SUSPEND_WITHDRAWALS) {
+    return { success: true, result: { withdrawalId: withdrawalDocRef.id } };
   }
   const blockchainTransactionId = await cryptoServices.triggerCoinWithdrawal({
     toAddress: address,
@@ -60,7 +63,7 @@ const createWithdrawal = async (input) => {
     await virtualBalanceServices.subtractFromBalance({ username, usdtAmount });
   }
 
-  return { success: true };
+  return { success: true, result: { withdrawalId: withdrawalDocRef.id } };
 };
 
 module.exports = {
