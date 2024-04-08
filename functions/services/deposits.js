@@ -1,7 +1,7 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 
-const { createWithdrawal } = require("./withdrawals");
+const { markWithdrawalFunded } = require("./withdrawals");
 const virtualBalanceServices = require("./virtualBalances");
 const conversionUtils = require("../utils/conversions");
 const jwt = require("jsonwebtoken");
@@ -117,14 +117,14 @@ const handleOnrampsWebhookData = async ({
   markPaidById({ depositId });
 
   if (myDeposit.withdrawal.triggerWithdrawal === true) {
-    const withdrawalAddressId = myDeposit.withdrawal.withdrawalAddressId;
-    functions.logger.log("onto withdrawqal!!", { withdrawalAddressId });
-    await createWithdrawal({
-      usdtAmount: usdtAmount,
-      withdrawalAddressId,
-      username: myDeposit.username,
-      ignoreBalance: true,
-    }); //TEMP_AWAIT
+    const withdrawalId = myDeposit.withdrawal.withdrawalId;
+    functions.logger.log("going to mark following withdrawalId as funded", {
+      withdrawalId,
+    });
+
+    await markWithdrawalFunded({
+      withdrawalId,
+    });
   } else {
     //either createWtihdrawal with ignroeBalance:true OR addToBalance
     await virtualBalanceServices.addToBalance({
