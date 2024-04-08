@@ -52,6 +52,15 @@ exports.currenciesUpdateEarliestDepositPrice = functions.pubsub
     return null;
   });
 
+exports.depositsMercuryoDepositSuccessWebhookTest = functions.https.onRequest(
+  async (req, res) => {
+    const payload = req.body.data;
+    functions.logger.log("SHABOINK!", payload);
+    await depositServices.processMercuryoWebhook(payload);
+    res.status(200).send();
+  }
+);
+
 exports.depositsMercuryoDepositSuccessWebhook = functions.https.onRequest(
   async (req, res) => {
     const payload = req.body.data;
@@ -161,11 +170,10 @@ exports.createWithdrawal = functions.https.onCall(async (data, context) => {
   const usdtAmount = data.usdtAmount;
   const username = context.auth.uid;
 
-  const { success } = await withdrawalServices.createWithdrawal({
+  const { success } = await withdrawalServices.createWithdrawalFromBalance({
     username,
     usdtAmount,
     withdrawalAddressId,
-    ignoreBalance: false,
   });
 
   return {
@@ -173,16 +181,24 @@ exports.createWithdrawal = functions.https.onCall(async (data, context) => {
   };
 });
 
-exports.testDeleteMe = functions.https.onRequest(async (req, res) => {
-  const { toAddress, cryptoValue } = req.body;
-  const blockchain = "tron";
-  const result = await transakApi.tronApi({
-    toAddress,
-    cryptoValue,
-    blockchain,
-  });
-  res.status(200).send(result);
-});
+exports.triggerWithdrawalTransactionOnWithdrawalFundedStatusChange =
+  functions.firestore
+    .document("/withdrawals/{docId}")
+    .onUpdate((snap, context) => {
+      const withdrawalBefore = snap.before.data();
+      const withdrawalAfter = snap.after.data();
+
+      if (
+        withdrawalBefore.funded === false &&
+        withdrawalAfter.funded === true &&
+        withdrawalAfter.transacted === false
+      ) {
+        return withdrawalServices.completeWithdrawal({
+          withdrawalId: context.params.docId,
+        });
+      }
+      return null;
+    });
 
 exports.fetchUsernameByEmail = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
@@ -272,14 +288,24 @@ exports.setCustomerSupportCurrentAgent = functions.https.onRequest(
 exports.testDeleteMe = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     const { username, usdtAmount, withdrawalAddressId } = req.body;
-    const { success, result } = await withdrawalServices.createWithdrawal({
-      username,
-      usdtAmount,
-      withdrawalAddressId,
-      ignoreBalance: true,
-    });
+    const { success, result } =
+      await withdrawalServices.createWithdrawalFromBalance({
+        username,
+        usdtAmount,
+        withdrawalAddressId,
+      });
     res.status(200).send(result);
   });
 });
+// exports.testDeleteMe = functions.https.onRequest(async (req, res) => {
+//   const { toAddress, cryptoValue } = req.body;
+//   const blockchain = "tron";
+//   const result = await transakApi.tronApi({
+//     toAddress,
+//     cryptoValue,
+//     blockchain,
+//   });
+//   res.status(200).send(result);
+// });
 
 //fetchWithdrawalTrackingInfo
