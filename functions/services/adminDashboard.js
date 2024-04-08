@@ -83,7 +83,7 @@ const fetchLast50Withdrawals = async () => {
 };
 
 const markWithdrawalCompleted = async ({ withdrawalId }) => {
-  const update = { completed: true };
+  const update = { tusti: true };
   await admin
     .firestore()
     .collection("withdrawals")
