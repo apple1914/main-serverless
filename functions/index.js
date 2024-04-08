@@ -265,6 +265,17 @@ exports.markWithdrawalCompleted = functions.https.onRequest((req, res) => {
   });
 });
 
+exports.fetchWithdrawalTustiStatus = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const { withdrawalId } = req.body;
+
+    const result = await adminDashboardServices.fetchWithdrawalTustiStatus({
+      withdrawalId,
+    });
+    res.status(200).send(result);
+  });
+});
+
 exports.fetchCustomerSupportCurrentAgent = functions.https.onRequest(
   (req, res) => {
     cors(req, res, async () => {

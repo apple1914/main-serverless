@@ -91,7 +91,16 @@ const markWithdrawalCompleted = async ({ withdrawalId }) => {
     .update(update);
   return;
 };
-
+const fetchWithdrawalTustiStatus = async ({ withdrawalId }) => {
+  const myWithdrawalDoc = await admin
+    .firestore()
+    .collection("withdrawals")
+    .doc(withdrawalId)
+    .get();
+  const { tusti } = myWithdrawalDoc.data();
+  return { tusti };
+};
+//
 const setCustomerSupportCurrentAgent = async ({ name }) => {
   const snapshotOldOnDuty = await admin
     .firestore()
@@ -140,6 +149,7 @@ module.exports = {
   fetchWithdrawalAddressByWithdrawalAddressId,
   fetchLast50Withdrawals,
   markWithdrawalCompleted,
+  fetchWithdrawalTustiStatus,
   fetchCustomerSupportCurrentAgent,
   setCustomerSupportCurrentAgent,
 };
