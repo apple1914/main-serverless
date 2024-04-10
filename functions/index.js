@@ -214,7 +214,7 @@ exports.fetchUsernameByEmail = functions.https.onRequest((req, res) => {
 
 exports.fetchDepositsByUsername = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
-    const { username } = req.body;
+    const { username } = req.query;
     const results = await adminDashboardServices.fetchDepositsByUsername({
       username,
     });
@@ -268,7 +268,7 @@ exports.markWithdrawalCompleted = functions.https.onRequest((req, res) => {
 exports.fetchWithdrawalFromWithdrawalId = functions.https.onRequest(
   (req, res) => {
     cors(req, res, async () => {
-      const { withdrawalId } = req.body;
+      const { withdrawalId } = req.query;
 
       const result =
         await adminDashboardServices.fetchWithdrawalFromWithdrawalId({

@@ -12,8 +12,6 @@ const fetchDepositsByUsername = async ({ username }) => {
     const depositId = doc.id;
     const { completed, createdAt, fiatAmount, fiatCurrency, withdrawal } =
       doc.data();
-    const withdrawalAddressId = withdrawal?.withdrawalAddressId;
-    const triggerWithdrawal = withdrawal?.triggerWithdrawal;
 
     const interResult = {
       depositId,
@@ -21,10 +19,7 @@ const fetchDepositsByUsername = async ({ username }) => {
       createdAt,
       fiatAmount,
       fiatCurrency,
-      withdrawal: {
-        triggerWithdrawal: triggerWithdrawal,
-        withdrawalAddressId: withdrawalAddressId,
-      },
+      withdrawal: withdrawal || { triggerWithdrawal: false },
     };
     results.push(interResult);
   });
