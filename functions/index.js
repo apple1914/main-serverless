@@ -265,16 +265,19 @@ exports.markWithdrawalCompleted = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.fetchWithdrawalTustiStatus = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    const { withdrawalId } = req.body;
+exports.fetchWithdrawalFromWithdrawalId = functions.https.onRequest(
+  (req, res) => {
+    cors(req, res, async () => {
+      const { withdrawalId } = req.body;
 
-    const result = await adminDashboardServices.fetchWithdrawalTustiStatus({
-      withdrawalId,
+      const result =
+        await adminDashboardServices.fetchWithdrawalFromWithdrawalId({
+          withdrawalId,
+        });
+      res.status(200).send(result);
     });
-    res.status(200).send(result);
-  });
-});
+  }
+);
 
 exports.fetchCustomerSupportCurrentAgent = functions.https.onRequest(
   (req, res) => {
