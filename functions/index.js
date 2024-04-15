@@ -16,7 +16,7 @@ const userServices = require("./services/users");
 const virtualBalanceServices = require("./services/virtualBalances");
 const onDocCreateServices = require("./services/onDocCreates");
 const adminDashboardServices = require("./services/adminDashboard");
-
+const rotationUtils = require("./utils/rotation");
 const transakApi = require("./api/transak");
 const tronApi = require("./api/tron");
 const admin = require("firebase-admin");
@@ -323,3 +323,16 @@ exports.testDeleteMe = functions.https.onRequest((req, res) => {
 // });
 
 //fetchWithdrawalTrackingInfo
+
+exports.rotateCustomerSupportAgent = functions.pubsub
+  .schedule("every 10 minutes")
+  .onRun(async (context) => {
+    const amOrPm = rotationUtils.amOrPmSchedNow();
+    const amOrPmToName = {
+      am: "test",
+      pm: "alfiya",
+    };
+    const name = amOrPmToName[amOrPm];
+    await adminDashboardServices.setCustomerSupportCurrentAgent({ name });
+    return null;
+  });
