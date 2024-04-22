@@ -16,6 +16,7 @@ const userServices = require("./services/users");
 const virtualBalanceServices = require("./services/virtualBalances");
 const onDocCreateServices = require("./services/onDocCreates");
 const adminDashboardServices = require("./services/adminDashboard");
+const messageServices = require("./services/messages");
 const rotationUtils = require("./utils/rotation");
 const transakApi = require("./api/transak");
 const tronApi = require("./api/tron");
@@ -324,15 +325,51 @@ exports.testDeleteMe = functions.https.onRequest((req, res) => {
 
 //fetchWithdrawalTrackingInfo
 
-exports.rotateCustomerSupportAgent = functions.pubsub
-  .schedule("every 10 minutes")
-  .onRun(async (context) => {
-    const amOrPm = rotationUtils.amOrPmSchedNow();
-    const amOrPmToName = {
-      am: "test",
-      pm: "alfiya",
-    };
-    const name = amOrPmToName[amOrPm];
-    await adminDashboardServices.setCustomerSupportCurrentAgent({ name });
-    return null;
+// exports.rotateCustomerSupportAgent = functions.pubsub
+//   .schedule("every 10 minutes")
+//   .onRun(async (context) => {
+//     // const amOrPm = rotationUtils.amOrPmSchedNow();
+//     // const amOrPmToName = {
+//     //   am: "test",
+//     //   pm: "alfiya",
+//     // };
+//     // const name = amOrPmToName[amOrPm];
+//     // await adminDashboardServices.setCustomerSupportCurrentAgent({ name });
+//     functions.logger.log("obso")
+//     return null;
+//   });
+
+exports.saveMessage = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const { body, role, roomId } = req.body;
+    await messageServices.saveMessage({ body, role, roomId });
+    res.status(200).send();
   });
+});
+
+exports.fetchMessages = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const { roomId } = req.query;
+    const results = await messageServices.fetchMessages({ roomId });
+    res.status(200).send(results);
+  });
+});
+
+exports.createCustomerSupportTicket = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const body = req.body;
+    functions.logger.log("chaka: ", body);
+
+    const payload = {
+      username: "none",
+      email: "none",
+      number: "none",
+      text: "пришло новое сообшение, проверить https://chatwoot-sante-support-aa03c200cca5.herokuapp.com",
+      createdAt: new Date(),
+    };
+    await admin.firestore().collection("customerSupportTickets").add(payload);
+    //create scustomerSupportTickets and pekams will hakdme the rest
+
+    res.status(200).send();
+  });
+});
