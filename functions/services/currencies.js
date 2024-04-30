@@ -8,7 +8,9 @@ const {
   MERCURYO_BUY_NETWORK,
 } = require("../utils/hardcodedCryptocurrencies.js");
 
-const FIAT_LEVELS = [1.05, 1.25, 1.5, 3.0];
+const FIAT_LEVELS = [
+  1.05, 1.1, 1.15, 1.25, 1.35, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0,
+];
 //fetchDepositMinimum
 //
 //

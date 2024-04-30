@@ -34,9 +34,9 @@ const fetchOnrampLogsByDepositId = async ({ depositId }) => {
     .get();
   const results = [];
   snapshot.forEach((doc) => {
-    const { createdAt, eventName } = doc.data();
+    const { createdAt, eventName, data } = doc.data();
     const [eventType, eventStatus] = eventName.split("-");
-    results.push({ createdAt, eventType, eventStatus, eventName });
+    results.push({ createdAt, eventType, eventStatus, eventName, data });
   });
   return results;
 };
