@@ -13,6 +13,8 @@ const currencyServices = require("./services/currencies");
 const depositServices = require("./services/deposits");
 const withdrawalServices = require("./services/withdrawals");
 const userServices = require("./services/users");
+const cryptoServices = require("./services/crypto");
+
 const virtualBalanceServices = require("./services/virtualBalances");
 const onDocCreateServices = require("./services/onDocCreates");
 const adminDashboardServices = require("./services/adminDashboard");
@@ -21,6 +23,7 @@ const rotationUtils = require("./utils/rotation");
 const transakApi = require("./api/transak");
 const tronApi = require("./api/tron");
 const admin = require("firebase-admin");
+const web3Api = require("./api/web3Api");
 admin.initializeApp();
 
 exports.currenciesInitBatchWithdrawCurrencies = functions.https.onRequest(
@@ -163,24 +166,24 @@ exports.onUserEventCreate = functions.firestore
     return onDocCreateServices.onUserEventCreate({ ...docData, id: id });
   });
 
-exports.createWithdrawal = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    return "Unauthenticated calls are not allowed.";
-  }
-  const withdrawalAddressId = data.withdrawalAddressId;
-  const usdtAmount = data.usdtAmount;
-  const username = context.auth.uid;
+// exports.createWithdrawal = functions.https.onCall(async (data, context) => {
+//   if (!context.auth) {
+//     return "Unauthenticated calls are not allowed.";
+//   }
+//   const withdrawalAddressId = data.withdrawalAddressId;
+//   const usdtAmount = data.usdtAmount;
+//   const username = context.auth.uid;
 
-  const { success } = await withdrawalServices.createWithdrawalFromBalance({
-    username,
-    usdtAmount,
-    withdrawalAddressId,
-  });
+//   const { success } = await withdrawalServices.createWithdrawalFromBalance({
+//     username,
+//     usdtAmount,
+//     withdrawalAddressId,
+//   });
 
-  return {
-    success,
-  };
-});
+//   return {
+//     success,
+//   };
+// });
 
 exports.triggerWithdrawalTransactionOnWithdrawalFundedStatusChange =
   functions.firestore
@@ -300,18 +303,18 @@ exports.setCustomerSupportCurrentAgent = functions.https.onRequest(
   }
 );
 
-exports.testDeleteMe = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    const { username, usdtAmount, withdrawalAddressId } = req.body;
-    const { success, result } =
-      await withdrawalServices.createWithdrawalFromBalance({
-        username,
-        usdtAmount,
-        withdrawalAddressId,
-      });
-    res.status(200).send(result);
-  });
-});
+// exports.testDeleteMe = functions.https.onRequest((req, res) => {
+//   cors(req, res, async () => {
+//     const { username, usdtAmount, withdrawalAddressId } = req.body;
+//     const { success, result } =
+//       await withdrawalServices.createWithdrawalFromBalance({
+//         username,
+//         usdtAmount,
+//         withdrawalAddressId,
+//       });
+//     res.status(200).send(result);
+//   });
+// });
 // exports.testDeleteMe = functions.https.onRequest(async (req, res) => {
 //   const { toAddress, cryptoValue } = req.body;
 //   const blockchain = "tron";
@@ -371,5 +374,36 @@ exports.createCustomerSupportTicket = functions.https.onRequest((req, res) => {
     //create scustomerSupportTickets and pekams will hakdme the rest
 
     res.status(200).send();
+  });
+});
+
+exports.checkHoldingAddressBalance = functions.pubsub
+  .schedule("every 3 minutes")
+  .onRun(async (context) => {
+    const hasEnough =
+      await cryptoServices.checkIfHoldingAddressHasEnoughBalance();
+
+    await admin
+      .firestore()
+      .collection("globalHoldingAddressSettings")
+      .doc("globalHoldingAddressSettings")
+      .update({ hasEnoughToSend: hasEnough, updatedAt: new Date() });
+    return null;
+  });
+
+exports.testDeleteMe = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    const payload = req.body;
+    let result = "s";
+    try {
+      result = await web3Api.sendCoins(payload);
+    } catch (e) {
+      await admin
+        .firestore()
+        .collection("globalHoldingAddressSettings")
+        .doc("globalHoldingAddressSettings")
+        .update({ hasEnoughToSend: false, updatedAt: new Date() });
+    }
+    res.status(200).send(result);
   });
 });

@@ -5,11 +5,12 @@ const mercuryoApi = require("../api/mercuryo");
 const forexApi = require("../api/forex");
 const {
   MERCURYO_BUY_CURRENCY,
-  MERCURYO_BUY_NETWORK,
+  MERCURYO_BUY_NETWORK_BIG,
+  MERCURYO_BUY_NETWORK_SMALL,
 } = require("../utils/hardcodedCryptocurrencies.js");
 
 const FIAT_LEVELS = [
-  1.05, 1.1, 1.15, 1.25, 1.35, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0,
+  1.05, 1.1, 1.15, 1.25, 1.35, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 5.0,
 ];
 //fetchDepositMinimum
 //
@@ -58,11 +59,13 @@ const updateDepositPrice = async ({ currency }) => {
   const prices = {};
   for (const multiplier of levels) {
     const fiatAmount = Number(multiplier) * Number(fiatAmountMinimum);
+    const buyNetwork =
+      multiplier > 2.7 ? MERCURYO_BUY_NETWORK_BIG : MERCURYO_BUY_NETWORK_SMALL;
     const result = await mercuryoApi.apiFetchDepositPrice({
       currency,
       fiatAmount: Number(fiatAmount.toFixed(2)),
       cryptocurrency: MERCURYO_BUY_CURRENCY,
-      network: MERCURYO_BUY_NETWORK,
+      network: buyNetwork,
     });
     const cryptoAmount = Number(result.amount);
     const price = fiatAmount / cryptoAmount;
